@@ -17,12 +17,14 @@ if menu == "🔮 잠재능력 재설정 / 큐브":
     with col1:
         item_level_cube = st.selectbox("장비 레벨 제한 선택", [140, 150, 160, 200, 250], index=3)
         
-        # 시스템 분리 (구형 큐브 vs 최신 메소)
+        # 제공된 데이터 표에 맞춰 시스템 분리 (수상한, 레드 제외)
         system_type = st.selectbox("강화 시스템 선택", [
-            "최신 잠재능력 재설정 (메소 소모)", 
-            "구 블랙 큐브 (레드/블랙 캐시 로직)",
+            "잠재능력 재설정 / 블랙 큐브 (메소 소모)",
             "에디셔널 잠재능력 재설정 (메소 소모)",
-            "구 에디셔널 큐브 (에디/화에큐 캐시 로직)"
+            "에디셔널 큐브 / 화이트 에디셔널 큐브 (아이템)",
+            "장인의 큐브 / 실버 큐브 (아이템)",
+            "명장의 큐브 / 골드 큐브 (아이템)",
+            "수상한 에디셔널 큐브 (아이템)"
         ])
         miracle_time = st.checkbox("🔥 미라클 타임 적용 (기본 등업 확률 2배)")
         item_type = st.selectbox("장비 분류", ["무기", "보조무기", "엠블렘", "방어구(장갑)", "방어구(기타)", "장신구"])
@@ -41,32 +43,39 @@ if menu == "🔮 잠재능력 재설정 / 큐브":
         line3 = st.selectbox("세 번째 줄 목표", ["상관없음", "공격력/마력 %", "보스 몬스터 공격 시 데미지 %", "방어율 무시 %", "크리티컬 데미지 %", "주스탯 %", "올스탯 %", "아이템 드롭률 %", "메소 획득량 %"])
 
     if st.button("🔮 초정밀 시뮬레이션 가동"):
-        # 1. 시스템별/레벨별 비용 스케일링 비율 (200제 기준)
+        # 시스템별/레벨별 비용 스케일링 비율 (200제 기준)
         level_scale = {140: 0.45, 150: 0.60, 160: 0.70, 200: 1.0, 250: 1.25}
         scale = level_scale[item_level_cube]
         
-        # 시스템 타입에 따른 단가 설정 (메소 혹은 캐시)
         is_meso_system = "메소" in system_type
         
-        # 200제 기준 단가 설정
-        if "최신 잠재능력" in system_type:
+        # 이미지 데이터 기준 확률 및 비용 세팅
+        if system_type == "잠재능력 재설정 / 블랙 큐브 (메소 소모)":
             base_costs = {"레어": 4500000, "에픽": 18000000, "유니크": 38250000, "레전더리": 45000000}
             rates = {"레어->에픽": 0.15, "에픽->유니크": 0.035, "유니크->레전더리": 0.014}
-            ceilings = {"레어->에픽": 11, "에픽->유니크": 32, "유니크->레전더리": 107} # 공식 천장 시스템
-        elif "구 블랙 큐브" in system_type:
-            base_costs = {"레어": 2200, "에픽": 2200, "유니크": 2200, "레전더리": 2200}
-            rates = {"레어->에픽": 0.15, "에픽->유니크": 0.035, "유니크->레전더리": 0.012} 
-            ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999} # 구 큐브는 천장 없음
-        elif "에디셔널 잠재능력" in system_type:
+            ceilings = {"레어->에픽": 11, "에픽->유니크": 32, "유니크->레전더리": 107}
+        elif system_type == "에디셔널 잠재능력 재설정 (메소 소모)":
             base_costs = {"레어": 11000000, "에픽": 30800000, "유니크": 74800000, "레전더리": 88000000}
-            rates = {"레어->에픽": 0.0238, "에픽->유니크": 0.0098, "유니크->레전더리": 0.007}
+            rates = {"레어->에픽": 0.023810, "에픽->유니크": 0.009804, "유니크->레전더리": 0.007}
             ceilings = {"레어->에픽": 72, "에픽->유니크": 152, "유니크->레전더리": 272}
-        else:
-            base_costs = {"레어": 2700, "에픽": 2700, "유니크": 2700, "레전더리": 2700}
-            rates = {"레어->에픽": 0.047, "에픽->유니크": 0.019, "유니크->레전더리": 0.005}
+        elif system_type == "에디셔널 큐브 / 화이트 에디셔널 큐브 (아이템)":
+            base_costs = {"레어": 1, "에픽": 1, "유니크": 1, "레전더리": 1}
+            rates = {"레어->에픽": 0.047619, "에픽->유니크": 0.019608, "유니크->레전더리": 0.007}
+            ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
+        elif system_type == "장인의 큐브 / 실버 큐브 (아이템)":
+            base_costs = {"레어": 1, "에픽": 1, "유니크": 1, "레전더리": 1}
+            rates = {"레어->에픽": 0.047619, "에픽->유니크": 0.011858, "유니크->레전더리": 0.0} # 유니크->레전 불가
+            ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
+        elif system_type == "명장의 큐브 / 골드 큐브 (아이템)":
+            base_costs = {"레어": 1, "에픽": 1, "유니크": 1, "레전더리": 1}
+            rates = {"레어->에픽": 0.079994, "에픽->유니크": 0.016959, "유니크->레전더리": 0.001996}
+            ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
+        elif system_type == "수상한 에디셔널 큐브 (아이템)":
+            base_costs = {"레어": 1, "에픽": 1, "유니크": 1, "레전더리": 1}
+            rates = {"레어->에픽": 0.004, "에픽->유니크": 0.0, "유니크->레전더리": 0.0} # 에픽 이상 불가
             ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
 
-        # 레벨별 비용 보정 (메소 시스템만 스케일링 적용)
+        # 레벨별 비용 보정 (메소 시스템만 스케일링 적용, 아이템은 수량 1 고정)
         costs = {}
         for k, v in base_costs.items():
             costs[k] = int(v * scale) if is_meso_system else v
@@ -78,36 +87,40 @@ if menu == "🔮 잠재능력 재설정 / 큐브":
         # 1. 등업 연산 및 천장 정보 수집
         if target_grade != "등급업 제외 (옵션만 타겟)":
             grades = ["레어", "에픽", "유니크", "레전더리"]
-            try:
-                curr_idx = grades.index(current_grade)
-                target_idx = grades.index(target_grade)
-                if curr_idx >= target_idx:
-                    st.error("❌ 목표 등급이 현재 등급보다 낮거나 같습니다.")
-                    st.stop()
+            curr_idx = grades.index(current_grade)
+            target_idx = grades.index(target_grade)
+            
+            if curr_idx >= target_idx:
+                st.error("❌ 목표 등급이 현재 등급보다 낮거나 같습니다.")
+                st.stop()
+            
+            for i in range(curr_idx, target_idx):
+                route = f"{grades[i]}->{grades[i+1]}"
+                rate = rates.get(route, 0.0)
                 
-                for i in range(curr_idx, target_idx):
-                    route = f"{grades[i]}->{grades[i+1]}"
-                    rate = rates.get(route, 0.01)
-                    if miracle_time:
-                        rate *= 2
+                # 등업 불가 큐브 예외 처리
+                if rate == 0.0:
+                    st.error(f"❌ 선택하신 [{system_type}]로는 {route} 등업이 불가능합니다.")
+                    st.stop()
                     
-                    avg_tries = int(1 / rate)
-                    max_ceil = ceilings.get(route, 999)
-                    
-                    # 천장이 발동했을 때의 보정
-                    actual_tries = min(avg_tries, max_ceil)
-                    total_tries += actual_tries
-                    total_cost_val += actual_tries * costs[grades[i]]
-                    
-                    # 천장 안내 메시지 생성
-                    if max_ceil != 999:
-                        ceil_cost = max_ceil * costs[grades[i]]
-                        if is_meso_system:
-                            ceil_info_text.append(f"📌 **{route} 확정 천장:** {max_ceil}회 (비용: 약 {ceil_cost / 100000000:.2f}억 메소)")
-                        else:
-                            ceil_info_text.append(f"📌 **{route} 확정 천장:** 없음 (구형 캐시 가챠)")
-            except ValueError:
-                pass
+                if miracle_time:
+                    rate *= 2
+                
+                avg_tries = int(1 / rate)
+                max_ceil = ceilings.get(route, 999)
+                
+                # 천장이 발동했을 때의 보정
+                actual_tries = min(avg_tries, max_ceil)
+                total_tries += actual_tries
+                total_cost_val += actual_tries * costs[grades[i]]
+                
+                # 천장 안내 메시지 생성
+                if max_ceil != 999:
+                    ceil_cost = max_ceil * costs[grades[i]]
+                    if is_meso_system:
+                        ceil_info_text.append(f"📌 {route} 확정 천장: {max_ceil}회 (비용: 약 {ceil_cost / 100000000:.2f}억 메소)")
+                    else:
+                        ceil_info_text.append(f"📌 {route} 확정 천장: 없음 (일반 아이템 큐브)")
 
         # 2. 옵션 저격 연산
         wanted_count = sum(1 for l in [line1, line2, line3] if l != "상관없음")
@@ -135,13 +148,13 @@ if menu == "🔮 잠재능력 재설정 / 큐브":
             col_res3.metric("🪙 정확한 메소 수치", f"{total_cost_val:,} 메소")
         else:
             col_res2.metric("🎟️ 필요 큐브 기댓값", f"{total_tries:,} 개")
-            # 넥슨캐시 노출을 숨기기 위해 세 번째 컬럼은 비워둡니다.
 
-        # 천장 시스템 UI 출력 (st.warning으로 시각적 강조)
+        # 천장 시스템 UI 출력 (노란색 배경 제거하고 글자 크기 확대)
         if ceil_info_text:
-            st.markdown("### 🚨 시스템 확정 등업 천장 정보")
+            st.markdown("<br>", unsafe_allow_html=True)
             for t in ceil_info_text:
-                st.warning(t)
+                st.markdown(f"<p style='font-size: 24px; font-weight: 800; color: #ff4b4b; margin: 5px 0;'>{t}</p>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
         st.markdown("### 🍀 내 운에 따른 소요 비용/큐브 분포 (1,000회 시뮬레이션 기반)")
         if is_meso_system:
