@@ -48,32 +48,25 @@ if menu == "🔮 잠재능력 재설정 / 큐브":
         # 시스템 타입에 따른 단가 설정 (메소 혹은 캐시)
         is_meso_system = "메소" in system_type
         
-        # 비용 및 확률 데이터베이스 세팅
-        cost_unit = "메소" if is_meso_system else "캐시"
-        
         # 200제 기준 단가 설정
         if "최신 잠재능력" in system_type:
-            # 메소 재설정 (구 블큐 포지션)
             base_costs = {"레어": 4500000, "에픽": 18000000, "유니크": 38250000, "레전더리": 45000000}
             rates = {"레어->에픽": 0.15, "에픽->유니크": 0.035, "유니크->레전더리": 0.014}
             ceilings = {"레어->에픽": 11, "에픽->유니크": 32, "유니크->레전더리": 107} # 공식 천장 시스템
         elif "구 블랙 큐브" in system_type:
-            # 옛날 블큐 (캐시 고정)
             base_costs = {"레어": 2200, "에픽": 2200, "유니크": 2200, "레전더리": 2200}
-            rates = {"레어->에픽": 0.15, "에픽->유니크": 0.035, "유니크->레전더리": 0.012} # 구 블큐 확률은 1.2%
+            rates = {"레어->에픽": 0.15, "에픽->유니크": 0.035, "유니크->레전더리": 0.012} 
             ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999} # 구 큐브는 천장 없음
         elif "에디셔널 잠재능력" in system_type:
-            # 에디 메소 재설정
             base_costs = {"레어": 11000000, "에픽": 30800000, "유니크": 74800000, "레전더리": 88000000}
             rates = {"레어->에픽": 0.0238, "에픽->유니크": 0.0098, "유니크->레전더리": 0.007}
             ceilings = {"레어->에픽": 72, "에픽->유니크": 152, "유니크->레전더리": 272}
         else:
-            # 구 에디/화에큐 (캐시 고정)
             base_costs = {"레어": 2700, "에픽": 2700, "유니크": 2700, "레전더리": 2700}
             rates = {"레어->에픽": 0.047, "에픽->유니크": 0.019, "유니크->레전더리": 0.005}
             ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
 
-        # 레벨별 비용 보정 (메소 시스템만 스케일링 적용, 캐시는 고정)
+        # 레벨별 비용 보정 (메소 시스템만 스케일링 적용)
         costs = {}
         for k, v in base_costs.items():
             costs[k] = int(v * scale) if is_meso_system else v
@@ -135,30 +128,30 @@ if menu == "🔮 잠재능력 재설정 / 큐브":
         st.subheader(f"📊 {item_level_cube}제 장비 분석 리포트")
         
         col_res1, col_res2, col_res3 = st.columns(3)
-        col_res1.metric("🔮 총 소모 시도 횟수", f"{total_tries:,} 회")
+        col_res1.metric("🔮 기대 시도 횟수", f"{total_tries:,} 회")
         
         if is_meso_system:
             col_res2.metric("💰 평균 기대 비용", f"{int(total_cost_val / 100000000):,}억 메소")
             col_res3.metric("🪙 정확한 메소 수치", f"{total_cost_val:,} 메소")
         else:
-            col_res2.metric("💳 평균 기대 비용", f"{total_cost_val:,} 넥슨캐시")
-            col_res3.metric("🎟️ 필요 큐브 개수", f"{total_tries:,} 개")
+            col_res2.metric("🎟️ 필요 큐브 기댓값", f"{total_tries:,} 개")
+            # 넥슨캐시 노출을 숨기기 위해 세 번째 컬럼은 비워둡니다.
 
-        # 천장 시스템 UI 출력
+        # 천장 시스템 UI 출력 (st.warning으로 시각적 강조)
         if ceil_info_text:
             st.markdown("### 🚨 시스템 확정 등업 천장 정보")
             for t in ceil_info_text:
-                st.write(t)
+                st.warning(t)
 
-        st.markdown("### 🍀 내 운에 따른 소요 비용 분포 (1,000회 시뮬레이션 기반)")
+        st.markdown("### 🍀 내 운에 따른 소요 비용/큐브 분포 (1,000회 시뮬레이션 기반)")
         if is_meso_system:
             st.write(f"🟢 **운이 매우 좋을 때 (상위 10%):** 약 **{int((total_cost_val * 0.35) / 100000000):,}억 메소**")
             st.write(f"🟡 **평범한 평균 페이스 (50%):** 약 **{int(total_cost_val / 100000000):,}억 메소**")
             st.write(f"🔴 **운이 나쁜 억까 구간 (하위 90%):** 약 **{int((total_cost_val * 2.1) / 100000000):,}억 메소**")
         else:
-            st.write(f"🟢 **운이 매우 좋을 때 (상위 10%):** 약 **{int(total_cost_val * 0.35):,} 캐시**")
-            st.write(f"🟡 **평범한 평균 페이스 (50%):** 약 **{total_cost_val:,} 캐시**")
-            st.write(f"🔴 **운이 나쁜 억까 구간 (하위 90%):** 약 **{int(total_cost_val * 2.1):,} 캐시**")
+            st.write(f"🟢 **운이 매우 좋을 때 (상위 10%):** 약 **{int(total_tries * 0.35):,} 개**")
+            st.write(f"🟡 **평범한 평균 페이스 (50%):** 약 **{total_tries:,} 개**")
+            st.write(f"🔴 **운이 나쁜 억까 구간 (하위 90%):** 약 **{int(total_tries * 2.1):,} 개**")
 
 # -----------------------------------------------------------------
 # 2. 스타포스 시뮬레이터 탭
@@ -231,9 +224,9 @@ elif menu == "⭐ 정밀 스타포스 계산기":
 
                     if rand_val < s_rate:
                         if event_type == "10성 이하 1+1 강화" and star <= 10:
-                        	star += 2
+                            star += 2
                         else:
-                        	star += 1
+                            star += 1
                         fail_streak = 0
                     elif rand_val < (s_rate + d_rate) and not (prevent_15_16 and star in [15, 16]):
                         destroy_count += 1
@@ -260,4 +253,4 @@ elif menu == "⭐ 정밀 스타포스 계산기":
         c1, c2, c3 = st.columns(3)
         c1.metric("💰 평균 소모 메소", f"{int(avg_meso / 100000000):,}억 메소")
         c2.metric("💥 평균 파괴 횟수", f"{avg_destroy:.2f}회 파괴")
-        c3.metric("⏱️ 평균 시도 횟수", f"{int(avg_meso / 12000000):,}번 클릭")
+        c3.metric("⏱️ 기대 시도 횟수", f"{int(avg_meso / 12000000):,}번 클릭")
