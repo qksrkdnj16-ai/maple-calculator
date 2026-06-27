@@ -22,9 +22,11 @@ with tab1:
     with col1:
         item_level_cube = st.selectbox("장비 레벨 제한 선택", [140, 150, 160, 200, 250], index=3, key="tier_lvl")
         
+        # 에디셔널 큐브/화이트 에디셔널 큐브(아이템) 추가
         system_type = st.selectbox("강화 시스템 선택", [
             "잠재능력 재설정 / 블랙 큐브 (메소 소모)",
             "에디셔널 잠재능력 재설정 (메소 소모)",
+            "에디셔널 큐브 / 화이트 에디셔널 큐브 (아이템)", 
             "장인의 큐브 / 실버 큐브 (아이템)",
             "명장의 큐브 / 골드 큐브 (아이템)"
         ])
@@ -39,20 +41,28 @@ with tab1:
         scale = level_scale[item_level_cube]
         is_meso_system = "메소" in system_type
         
-        # 확률 및 비용 세팅
+        # 이미지 데이터 기준 확률 및 비용 세팅
         if "블랙 큐브" in system_type:
             base_costs = {"레어": 4500000, "에픽": 18000000, "유니크": 38250000, "레전더리": 45000000}
             rates = {"레어->에픽": 0.15, "에픽->유니크": 0.035, "유니크->레전더리": 0.014}
             ceilings = {"레어->에픽": 11, "에픽->유니크": 32, "유니크->레전더리": 107}
+            
         elif "에디셔널 잠재능력" in system_type:
             base_costs = {"레어": 11000000, "에픽": 30800000, "유니크": 74800000, "레전더리": 88000000}
             rates = {"레어->에픽": 0.023810, "에픽->유니크": 0.009804, "유니크->레전더리": 0.007}
             ceilings = {"레어->에픽": 72, "에픽->유니크": 152, "유니크->레전더리": 272}
+            
+        elif "화이트 에디셔널 큐브" in system_type:
+            base_costs = {"레어": 1, "에픽": 1, "유니크": 1, "레전더리": 1}
+            rates = {"레어->에픽": 0.047619, "에픽->유니크": 0.019608, "유니크->레전더리": 0.007}
+            ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
+            
         elif "장인의 큐브" in system_type:
             base_costs = {"레어": 1, "에픽": 1, "유니크": 1, "레전더리": 1}
             rates = {"레어->에픽": 0.047619, "에픽->유니크": 0.011858, "유니크->레전더리": 0.0}
             ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
-        else:
+            
+        elif "명장의 큐브" in system_type:
             base_costs = {"레어": 1, "에픽": 1, "유니크": 1, "레전더리": 1}
             rates = {"레어->에픽": 0.079994, "에픽->유니크": 0.016959, "유니크->레전더리": 0.001996}
             ceilings = {"레어->에픽": 999, "에픽->유니크": 999, "유니크->레전더리": 999}
@@ -62,6 +72,7 @@ with tab1:
         total_cost_val = 0
         total_tries = 0
         ceil_info_text = []
+        prob_info_text = []
 
         grades = ["레어", "에픽", "유니크", "레전더리"]
         curr_idx = grades.index(current_grade)
@@ -72,15 +83,20 @@ with tab1:
         else:
             for i in range(curr_idx, target_idx):
                 route = f"{grades[i]}->{grades[i+1]}"
-                rate = rates.get(route, 0.0)
+                base_rate = rates.get(route, 0.0)
                 
-                if rate == 0.0:
+                if base_rate == 0.0:
                     st.error(f"❌ 선택하신 [{system_type}]로는 {route} 등업이 불가능합니다.")
                     st.stop()
-                    
-                if miracle_time: rate *= 2
                 
-                avg_tries = int(1 / rate)
+                # 확률 정보 저장 (UI 출력용)
+                base_percent = base_rate * 100
+                miracle_percent = base_percent * 2
+                prob_info_text.append(f"- **{route}** : 1회 시도 기본 **{base_percent:.4f}%** (미라클 타임 **{miracle_percent:.4f}%**)")
+                    
+                actual_rate = base_rate * 2 if miracle_time else base_rate
+                
+                avg_tries = int(1 / actual_rate)
                 max_ceil = ceilings.get(route, 999)
                 
                 actual_tries = min(avg_tries, max_ceil)
@@ -94,8 +110,14 @@ with tab1:
             st.markdown("---")
             st.subheader(f"📊 {item_level_cube}제 장비 등업 리포트")
             
+            # 구간별 1회 시도 확률 출력
+            st.markdown("#### 🎲 선택하신 구간의 확률 정보")
+            for p_text in prob_info_text:
+                st.write(p_text)
+            st.markdown("<br>", unsafe_allow_html=True)
+            
             c1, c2, c3 = st.columns(3)
-            c1.metric("🔮 기대 시도 횟수", f"{total_tries:,} 회")
+            c1.metric("🔮 누적 기대 시도 횟수", f"{total_tries:,} 회")
             
             if is_meso_system:
                 c2.metric("💰 평균 기대 비용", f"{int(total_cost_val / 100000000):,}억 메소")
@@ -141,7 +163,6 @@ with tab2:
         o3_val = st.number_input("3번째 줄 (%)", min_value=0, max_value=40, step=1, value=9)
 
     if st.button("🎯 옵션 저격 기댓값 계산"):
-        # 간단한 프라임 옵션 판별 로직
         def is_prime(o_type, o_val):
             if o_type == "크리티컬 데미지" and o_val >= 8: return True
             if o_type in ["공격력/마력", "주스탯"] and o_val >= 12: return True
@@ -153,23 +174,19 @@ with tab2:
         wanted_lines = [l for l in lines if l[0] != "상관없음"]
         prime_count = sum(1 for l in wanted_lines if is_prime(l[0], l[1]))
         
-        # 난이도 기반 시도 횟수 근사치 연산
         if not wanted_lines:
             st.warning("목표 옵션을 최소 1개 이상 지정해주세요.")
         else:
             base_tries = 1
             for l in wanted_lines:
-                base_tries *= 14  # 특정 유효옵이 뜰 기본 확률 역산
+                base_tries *= 14  
             
-            # 2, 3번째 줄에 프라임 옵션을 요구할 경우 난이도 폭증 (이탈 확률 10%)
             if prime_count > 1:
                 base_tries *= (10 ** (prime_count - 1))
                 
-            # 부위별 예외 처리 (장갑 크뎀, 무보엠 보공 등)
             if item_cat == "장갑" and any(l[0] == "크리티컬 데미지" for l in wanted_lines): base_tries *= 2
             if item_cat == "무기/보조무기/엠블렘" and any(l[0] == "보스 몬스터 공격 시 데미지" for l in wanted_lines): base_tries *= 3
 
-            # 메소 비용 스케일링
             level_scale = {140: 0.45, 150: 0.60, 160: 0.70, 200: 1.0, 250: 1.25}
             scale = level_scale[item_level_opt]
             cost_per_try = int(45000000 * scale) if "잠재능력" in cube_type_opt else int(88000000 * scale)
@@ -230,7 +247,6 @@ with tab3:
                     fail_streak = 0
 
                     while star < target_star:
-                        # 1. 1회 강화 비용 연산
                         if star < 10:
                             cost = 1000 + (item_level**3) * (star + 1) / 2500
                         elif star < 15:
@@ -245,21 +261,18 @@ with tab3:
                         
                         total_meso += cost
 
-                        # 찬스타임 발동
                         if chance_time:
                             star += 1
                             chance_time = False
                             fail_streak = 0
                             continue
 
-                        # 확률 데이터 세팅
                         success_rates = {12: 0.40, 13: 0.35, 14: 0.30, 15: 0.30, 16: 0.30, 17: 0.30, 18: 0.30, 19: 0.30, 20: 0.10, 21: 0.10, 22: 0.03}
                         destroy_rates = {15: 0.021, 16: 0.021, 17: 0.021, 18: 0.028, 19: 0.028, 20: 0.10, 21: 0.10, 22: 0.194}
 
                         s_rate = success_rates.get(star, 0.50 if star < 12 else 0.01)
                         d_rate = destroy_rates.get(star, 0.0)
 
-                        # 2026년 업데이트: 스타캐치 기본(상시) 1.05배수 적용
                         s_rate *= 1.05
 
                         if ("100%" in event_type or "샤이닝" in event_type) and star in [5, 10, 15]:
@@ -268,7 +281,6 @@ with tab3:
                         rand_val = random.random()
 
                         if rand_val < s_rate:
-                            # 성공
                             if "1+1" in event_type and star <= 10:
                                 star += 2
                             else:
@@ -276,14 +288,11 @@ with tab3:
                             fail_streak = 0
                         
                         elif rand_val < (s_rate + d_rate) and not (prevent_15_17 and star in [15, 16, 17]):
-                            # 파괴 (2026 업데이트: 흔적이 파괴 직전 스타포스로 유지됨)
                             destroy_count += 1
-                            total_meso += (restore_cost * 100000000) # 스페어/메소 복구 비용 합산 지불
+                            total_meso += (restore_cost * 100000000) 
                             fail_streak = 0
-                            # 별이 12성으로 떨어지지 않음 (star 변수 유지)
                             
                         else:
-                            # 실패
                             if star in [15, 20]:
                                 pass
                             elif star > 10:
